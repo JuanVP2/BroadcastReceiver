@@ -1,38 +1,105 @@
 package com.example.broadcastreceiver
 
-import android.Manifest
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.unit.dp
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        checkPermissions()
 
         val serviceIntent = Intent(this, CallService::class.java)
         startService(serviceIntent)
+
+        setContent {
+            AutoReplyCallAppTheme {
+                MainScreen()
+            }
+        }
+    }
+}
+
+@Composable
+fun MainScreen() {
+    val context = LocalContext.current
+    var phoneNumber by remember { mutableStateOf(TextFieldValue("")) }
+    var customMessage by remember {
+        mutableStateOf(TextFieldValue("Lo siento, estoy ocupado. Te responderé pronto."))
     }
 
-    private val PERMISSIONS = arrayOf(
-        Manifest.permission.READ_PHONE_STATE,
-        Manifest.permission.SEND_SMS,
-        Manifest.permission.RECEIVE_SMS,
-        Manifest.permission.READ_CALL_LOG
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "Auto Reply Call App",
+            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+
+        OutlinedTextField(
+            value = phoneNumber,
+            onValueChange = { phoneNumber = it },
+            label = { Text("Número de teléfono") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp)
+        )
+
+        OutlinedTextField(
+            value = customMessage,
+            onValueChange = { customMessage = it },
+            label = { Text("Mensaje de respuesta automática") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            maxLines = 3
+        )
+
+        Button(
+            onClick = {
+                val number = phoneNumber.text.trim()
+                val message = customMessage.text.trim()
+
+                if (number.isNotEmpty() && message.isNotEmpty()) {
+                    CallReceiver.customMessage = message
+                    Toast.makeText(
+                        context,
+                        "Respuesta automática configurada para $number",
+                        Toast.LENGTH_SHORT
+                    ).show()
+
+                } else {
+                    Toast.makeText(
+                        context,
+                        "Por favor ingrese un número y mensaje",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Configurar Auto-Respuesta")
+        }
+    }
+}
+
+@Composable
+fun AutoReplyCallAppTheme(content: @Composable () -> Unit) {
+    MaterialTheme(
+        content = content
     )
-
-    private val REQUEST_CODE = 101
-
-    private fun checkPermissions() {
-        val missingPermissions = PERMISSIONS.filter {
-            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
-        }
-
-        if (missingPermissions.isNotEmpty()) {
-            ActivityCompat.requestPermissions(this, missingPermissions.toTypedArray(), REQUEST_CODE)
-        }
-    }
 }

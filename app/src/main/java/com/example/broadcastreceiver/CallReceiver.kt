@@ -16,6 +16,8 @@ class CallReceiver : BroadcastReceiver() {
         private var ultimoNumeroDetectado: String? = null
         private var smsEnviado = false
         private var ultimoEstado: String? = null
+
+        var customMessage: String = "Lo siento, estoy ocupado. Te responderé pronto."
     }
 
     override fun onReceive(context: Context?, intent: Intent?) {
@@ -27,7 +29,6 @@ class CallReceiver : BroadcastReceiver() {
         if (intent.action == TelephonyManager.ACTION_PHONE_STATE_CHANGED) {
             val state = intent.getStringExtra(TelephonyManager.EXTRA_STATE)
 
-
             if (state == ultimoEstado) {
                 return
             }
@@ -36,7 +37,6 @@ class CallReceiver : BroadcastReceiver() {
             var incomingNumber = intent.getStringExtra(TelephonyManager.EXTRA_INCOMING_NUMBER)
 
             Log.d("CallReceiver", ">>> Estado de la llamada: $state")
-
 
             if (incomingNumber == null) {
                 incomingNumber = obtenerUltimaLlamada(context)
@@ -82,7 +82,7 @@ class CallReceiver : BroadcastReceiver() {
     }
 
     private fun enviarRespuestaAutomatica(context: Context, numero: String) {
-        val mensaje = "Lo siento, estoy ocupado. Te responderé pronto."
+        val mensaje = customMessage
 
         Log.d("CallReceiver", ">>> Enviando SMS a: $numero")
         Log.d("CallReceiver", ">>> Mensaje: $mensaje")
