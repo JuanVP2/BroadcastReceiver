@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
 import android.os.Build
+import android.telephony.SmsManager
 import androidx.core.app.NotificationCompat
 import android.util.Log
 
@@ -15,20 +16,38 @@ class CallService : Service() {
         const val CHANNEL_ID = "CallServiceChannel"
     }
 
+    override fun onCreate() {
+        super.onCreate()
+        createNotificationChannel()
+    }
+
     @SuppressLint("ForegroundServiceType")
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        createNotificationChannel()
+        val phoneNumber = intent?.getStringExtra("phoneNumber") ?: "Número desconocido"
+        Log.d("CallService", "Iniciando servicio para número: $phoneNumber")
 
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Call Service")
-            .setContentText("Monitorizando llamadas...")
+            .setContentTitle("Llamada detectada")
+            .setContentText("Número: $phoneNumber")
             .setSmallIcon(R.drawable.ic_launcher_background)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .build()
 
         startForeground(1, notification)
 
-        Log.d("CallService", "Servicio iniciado en primer plano")
-        return START_STICKY
+        enviarSMS(phoneNumber)
+
+        return START_NOT_STICKY
+    }
+
+    private fun enviarSMS(numero: String) {
+        try {
+            val smsManager = SmsManager.getDefault()
+            smsManager.sendTextMessage(numero, null, "Lo siento, estoy ocupado.", null, null)
+            Log.d("CallService", "SMS enviado correctamente a: $numero")
+        } catch (e: Exception) {
+            Log.e("CallService", "Error al enviar SMS: ${e.message}")
+        }
     }
 
     private fun createNotificationChannel() {
@@ -36,12 +55,9 @@ class CallService : Service() {
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 "Canal de Servicio de Llamadas",
-                NotificationManager.IMPORTANCE_DEFAULT
-            ).apply {
-                description = "Canal para el servicio que monitoriza llamadas"
-            }
-            val manager = getSystemService(NotificationManager::class.java)
-            manager.createNotificationChannel(channel)
+                NotificationManager.IMPORTANCE_HIGH
+            )
+            getSystemService(NotificationManager::class.java)?.createNotificationChannel(channel)
         }
     }
 
